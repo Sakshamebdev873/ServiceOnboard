@@ -13,8 +13,8 @@ const Form = () => {
   } = useServiceForm();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow p-8">
+    <div className="min-h-screen rounded-2xl bg-gray-50 py-10 px-4">
+      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow p-4 lg:p-8">
         <h2 className="text-2xl font-bold mb-6">Service Onboarding</h2>
         
         <form onSubmit={handleSubmit} className="space-y-8">
