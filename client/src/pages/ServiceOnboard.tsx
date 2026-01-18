@@ -272,9 +272,11 @@ const handleAutoFillAddress = async () => {
       formData.images.forEach((imageFile) => {
         dataToSend.append('images', imageFile);
       });
-
+// https://serviceonboard.onrender.com/
       // 3. Call API
-      const response = await fetch('http://localhost:5000/api/service-center', {
+      // const response = await fetch('http://localhost:5000/api/service-center', {
+const response = await fetch('https://serviceonboard.onrender.com/api/service-center', {
+
         method: 'POST',
         body: dataToSend, // Browser automatically sets Content-Type to multipart/form-data
       });
