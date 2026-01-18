@@ -285,7 +285,7 @@ const response = await fetch('https://serviceonboard.onrender.com/api/service-ce
 
       if (response.ok) {
         // Success
-        console.log('Server Response:', result);
+        // console.log('Server Response:', result);
         alert('Service Center Onboarded Successfully!');
         
         // Reset Form
@@ -309,10 +309,9 @@ const response = await fetch('https://serviceonboard.onrender.com/api/service-ce
         alert(`Failed to submit: ${result.error || 'Unknown error'}`);
       }
 
-    } catch (error) {
-      // Network Error
+    } catch (error : any) {
       console.error('Network Error:', error);
-      alert('Could not connect to the server. Is the backend running?');
+      // alert('Could not connect to the server. Is the backend running?');
     } finally {
       setIsSubmitting(false);
     }

@@ -13,7 +13,12 @@ const PORT = process.env.PORT || 5000;
 
 // --- Middleware ---
 app.use(cors({
-  origin: 'https://service-center-client.onrender.com' // Replace with your actual Frontend Render URL
+  origin: [
+    "http://localhost:5173",                          // Allow Localhost for testing
+    "https://serviceonboard-1.onrender.com",     // YOUR RENDER FRONTEND URL
+    "https://serviceonboard.onrender.com"             // (Just in case you mixed up names)
+  ],
+  credentials: true
 }));
 app.use(express.json());
 
