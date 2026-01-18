@@ -53,7 +53,7 @@ const ServiceOnboardForm: React.FC = () => {
   // Loading states
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isFetchingAddress, setIsFetchingAddress] = useState<boolean>(false);
-
+const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   // --- Validation Logic ---
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -238,13 +238,81 @@ const handleAutoFillAddress = async () => {
   };
 
   // --- Submit ---
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log('Valid Form Data:', formData);
-      alert('Form submitted successfully! Check console.');
-    } else {
-      alert('Please fix the errors in the form.');
+
+    // 1. Run Validation
+    if (!validateForm()) {
+      alert('Please fix the highlighted errors before submitting.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 2. Prepare Data for Backend (Multipart/Form-Data)
+      const dataToSend = new FormData();
+      
+      dataToSend.append('centerName', formData.centerName);
+      dataToSend.append('phone', formData.phone);
+      dataToSend.append('email', formData.email);
+      dataToSend.append('city', formData.city);
+      dataToSend.append('state', formData.state);
+      dataToSend.append('zipCode', formData.zipCode);
+      dataToSend.append('country', formData.country);
+      dataToSend.append('latitude', formData.latitude);
+      dataToSend.append('longitude', formData.longitude);
+
+      // Append Categories (Loop through array)
+      formData.categories.forEach((cat) => {
+        dataToSend.append('categories', cat);
+      });
+
+      // Append Images (Loop through file array)
+      formData.images.forEach((imageFile) => {
+        dataToSend.append('images', imageFile);
+      });
+
+      // 3. Call API
+      const response = await fetch('http://localhost:5000/api/service-center', {
+        method: 'POST',
+        body: dataToSend, // Browser automatically sets Content-Type to multipart/form-data
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Success
+        console.log('Server Response:', result);
+        alert('Service Center Onboarded Successfully!');
+        
+        // Reset Form
+        setFormData({
+          centerName: '',
+          phone: '',
+          email: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'India',
+          latitude: '',
+          longitude: '',
+          categories: [],
+          images: [],
+        });
+        setPreviews([]);
+      } else {
+        // Server Error (e.g., Validation failed on backend)
+        console.error('Server Error:', result);
+        alert(`Failed to submit: ${result.error || 'Unknown error'}`);
+      }
+
+    } catch (error) {
+      // Network Error
+      console.error('Network Error:', error);
+      alert('Could not connect to the server. Is the backend running?');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -481,13 +549,23 @@ const handleAutoFillAddress = async () => {
 
           {/* --- Submit --- */}
           <div className="pt-4">
-            <button
-              type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Submit Onboarding Form
-            </button>
-          </div>
+  <button
+    type="submit"
+    disabled={isSubmitting}
+    className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
+      ${isSubmitting ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'} 
+      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+  >
+    {isSubmitting ? (
+      <>
+        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+        Submitting...
+      </>
+    ) : (
+      'Submit Onboarding Form'
+    )}
+  </button>
+</div>
         </form>
       </div>
     </div>

@@ -1,44 +1,35 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+    // 1. Correct the Root Directory to the current folder
+    "rootDir": "./",
+    "outDir": "./dist",
 
-    // Environment Settings
-    // See also https://aka.ms/tsconfig/module
+    // 2. Node.js specific settings
     "module": "nodenext",
-    "target": "esnext",
-    "types": [],
-    // For nodejs:
-    // "lib": ["esnext"],
-    // "types": ["node"],
-    // and npm install -D @types/node
-
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Style Options
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-
-    // Recommended Options
-    "strict": true,
-    "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
+    "moduleResolution": "nodenext",
+    "target": "es2022",
+    
+    // 3. Libraries needed for backend
+    "lib": ["es2022"],
+    
+    // 4. Interop settings
+    "esModuleInterop": true,
     "skipLibCheck": true,
-  }
+    "strict": true,
+    
+    // 5. Allow JSON imports (often needed)
+    "resolveJsonModule": true
+  },
+  // 6. Explicitly tell TS to look at files in the root
+  "include": [
+    "index.ts",
+    "prisma.config.ts",
+    "generated/**/*" 
+  ],
+  // 7. IMPORTANT: Ignore the 'client' folder so backend TS doesn't fight with Frontend TS
+  "exclude": [
+    "node_modules",
+    "client",
+    "dist"
+  ]
 }
