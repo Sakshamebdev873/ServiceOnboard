@@ -1,17 +1,20 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, InfoWindow } from '@react-google-maps/api';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import { MarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer';
 import type { ServiceCenterResponse } from '../types/ServiceFormData'; // Adjust path if needed
 
-const containerStyle = {
-  width: '100%',
-  height: '500px',
-  borderRadius: '12px'
+// NEW: Define the geographic bounds for Maharashtra
+const MAHARASHTRA_BOUNDS = {
+  north: 22.02,
+  south: 15.60,
+  west: 72.60,
+  east: 80.90,
 };
 
+// Default center can now be the center of Maharashtra
 const defaultCenter = {
-  lat: 20.5937,
-  lng: 78.9629
+  lat: 19.1,
+  lng: 75.7,
 };
 
 interface ServiceMapProps {
@@ -24,12 +27,9 @@ const ServiceMap: React.FC<ServiceMapProps> = ({ locations }) => {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
   });
 
-  // --- KEY CHANGE 1: Use useState for the map instance ---
-  // This ensures the component re-renders when the map is ready.
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedCenterGroup, setSelectedCenterGroup] = useState<ServiceCenterResponse[] | null>(null);
 
-  // Group locations by their exact coordinates (this part is correct)
   const locationsByCoord = useMemo(() => {
     const groups: Record<string, ServiceCenterResponse[]> = {};
     locations.forEach(loc => {
@@ -42,12 +42,10 @@ const ServiceMap: React.FC<ServiceMapProps> = ({ locations }) => {
     return Object.values(groups);
   }, [locations]);
 
-  // --- KEY CHANGE 2: Update onLoad and onUnmount to use setMap ---
   const onLoad = useCallback((mapInstance: google.maps.Map) => {
-    // Set the map instance to state, triggering the useEffect
     setMap(mapInstance);
     
-    // Auto-zoom to fit all markers
+    // Auto-zoom to fit all markers, but it will be constrained by the restriction
     if (locations.length > 0) {
       const bounds = new window.google.maps.LatLngBounds();
       locations.forEach(loc => {
@@ -63,15 +61,21 @@ const ServiceMap: React.FC<ServiceMapProps> = ({ locations }) => {
     setMap(null);
   }, []);
 
-  // --- KEY CHANGE 3: This useEffect now runs correctly when `map` is set ---
   useEffect(() => {
-    // If map is not ready, do nothing
     if (!map) return;
 
-    // Create the clusterer instance, linking it to the map
-    const clusterer = new MarkerClusterer({ map, markers: [] });
+    // --- UPDATED CLUSTERER CONFIGURATION ---
+    const clusterer = new MarkerClusterer({ 
+        map, 
+        markers: [],
+        // The algorithm controls how clustering behaves.
+        algorithm: new SuperClusterAlgorithm({ 
+            // A smaller radius means markers must be closer to be grouped.
+            // Default is 60. Let's try 40.
+            radius: 40, 
+        })
+    });
     
-    // Create markers for each unique location group
     const markers = locationsByCoord.map(group => {
       const position = {
         lat: parseFloat(group[0].latitude),
@@ -80,38 +84,44 @@ const ServiceMap: React.FC<ServiceMapProps> = ({ locations }) => {
       
       const marker = new google.maps.Marker({ position });
       
-      // Add a click listener to each marker
       marker.addListener('click', () => {
         setSelectedCenterGroup(group);
-        map.panTo(position); // Pan map to the clicked marker
+        map.panTo(position);
       });
       
       return marker;
     });
 
-    // Add all the markers to the clusterer
     clusterer.addMarkers(markers);
     
-    // IMPORTANT: Add a cleanup function to remove old markers when locations change
     return () => {
       clusterer.clearMarkers();
     };
 
-  }, [map, locationsByCoord]); // Correct dependencies: map and the location groups
+  }, [map, locationsByCoord]);
 
   if (!isLoaded) return <div className="h-[500px] bg-slate-100 animate-pulse rounded-xl flex items-center justify-center text-slate-400">Loading Map...</div>;
 
   return (
     <GoogleMap
-      mapContainerStyle={containerStyle}
+      // UPDATED: Use className for responsive height
+      mapContainerClassName="w-full h-[70vh] sm:h-[500px] rounded-xl"
       center={defaultCenter}
-      zoom={5}
+      zoom={7} // A good starting zoom for a state-level view
       onLoad={onLoad}
       onUnmount={onUnmount}
-      options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
+      options={{ 
+        streetViewControl: false, 
+        mapTypeControl: false, 
+        fullscreenControl: false,
+        // NEW: Restrict map panning and zooming to Maharashtra
+        restriction: {
+            latLngBounds: MAHARASHTRA_BOUNDS,
+            strictBounds: false, // `false` gives a smoother user experience
+        },
+      }}
     >
-      {/* The markers are now managed entirely by the useEffect hook. We only render the InfoWindow here. */}
-      
+      {/* Markers are managed by useEffect. Only InfoWindow is rendered here. */}
       {selectedCenterGroup && (
         <InfoWindow
           position={{
