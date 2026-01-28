@@ -1,8 +1,8 @@
 import { Loader2, Map, MapPin } from "lucide-react";
-import type { ServiceFormData, FormErrors } from "../../types/ServiceFormData";
+import type {FormErrors, ServiceCenter } from "../../types/ServiceFormData";
 
 interface Props {
-  formData: ServiceFormData;
+  formData: ServiceCenter;
   errors: FormErrors;
   status: { locating: boolean; fetchingAddress: boolean };
   onGetLocation: () => void;
@@ -21,7 +21,13 @@ export const LocationSection = ({ formData, errors, status, onGetLocation, onAut
           <label className="block text-xs font-medium text-gray-500 mb-1">Latitude</label>
           <input 
             type="text" 
-            readOnly 
+       onPaste={(e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text");
+    onChange({
+      target: { name: "latitude", value: pasted }
+    } as React.ChangeEvent<HTMLInputElement>);
+  }}
             value={formData.latitude} 
             placeholder="Latitude" 
             className="w-full border p-2 rounded bg-gray-50 text-gray-500" 
@@ -31,7 +37,13 @@ export const LocationSection = ({ formData, errors, status, onGetLocation, onAut
           <label className="block text-xs font-medium text-gray-500 mb-1">Longitude</label>
           <input 
             type="text" 
-            readOnly 
+     onPaste={(e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text");
+    onChange({
+      target: { name: "longitude", value: pasted }
+    } as React.ChangeEvent<HTMLInputElement>);
+  }}
             value={formData.longitude} 
             placeholder="Longitude" 
             className="w-full border p-2 rounded bg-gray-50 text-gray-500" 

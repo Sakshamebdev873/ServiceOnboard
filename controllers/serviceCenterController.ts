@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { uploadImagesToCloudinary, cleanupLocalFiles } from '../services/imageService.js';
 import { createServiceCenter } from '../services/serviceCenterService.js';
-
+import { prisma } from '../lib/prisma.js';
 export const onboardServiceCenter = async (req: Request, res: Response): Promise<void> => {
   try {
     const { 
@@ -47,6 +47,18 @@ export const onboardServiceCenter = async (req: Request, res: Response): Promise
     cleanupLocalFiles(files);
 
     console.error('Error saving service center:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+export const getAllServiceCenters = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const centers = await prisma.serviceCenter.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json(centers);
+  } catch (error) {
+    console.error('Error fetching centers:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };

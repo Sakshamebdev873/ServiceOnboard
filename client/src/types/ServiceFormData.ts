@@ -1,15 +1,17 @@
-export interface ServiceFormData {
+export interface ServiceCenter {
+  id: number;
   centerName: string;
   phone: string;
   email: string;
-  city: string; // Added City
+  city: string;
   state: string;
   zipCode: string;
   country: string;
-  latitude: string;
-  longitude: string;
+  latitude: string; // Stored as string in Prisma
+  longitude: string; // Stored as string in Prisma
   categories: string[];
-  images: File[];
+  imagePaths: string[];
+  createdAt: string; // JSON dates come back as strings
 }
 export interface FormErrors {
   centerName?: string;
