@@ -1,7 +1,7 @@
 import type { ServiceFormData } from "../types/ServiceFormData";
 
-// const API_URL = "https://serviceonboard.onrender.com/api/service-center";
-const API_URL = "http://localhost:5000/api/service-center"
+const API_URL = "https://serviceonboard.onrender.com/api/service-center";
+// const API_URL = "http://localhost:5000/api/service-center"
 
 interface SubmitServiceResponse {
   success: boolean;
