@@ -1,9 +1,10 @@
-import { uploadImagesToCloudinary, cleanupLocalFiles } from '../services/imageService.js';
-import { createServiceCenter } from '../services/serviceCenterService.js';
-import { prisma } from '../lib/prisma.js';
+import { uploadImagesToCloudinary, cleanupLocalFiles, } from "../services/imageService.js";
+import { createServiceCenter } from "../services/serviceCenterService.js";
+import { prisma } from "../lib/prisma.js";
 export const onboardServiceCenter = async (req, res) => {
+    const files = req.files || [];
     try {
-        const { centerName, phone, email, city, state, zipCode, country, latitude, longitude } = req.body;
+        const { centerName, phone, email, city, state, zipCode, country, latitude, longitude, } = req.body;
         // 1. Normalize Categories (Handle FormData array behavior)
         let categories = [];
         if (req.body.categories) {
@@ -12,44 +13,60 @@ export const onboardServiceCenter = async (req, res) => {
                 : [req.body.categories];
         }
         // 2. Upload Images
-        const files = req.files;
         let uploadedImageUrls = [];
-        try {
-            uploadedImageUrls = await uploadImagesToCloudinary(files);
-        }
-        catch (uploadError) {
-            // If image upload fails, stop everything
-            return;
+        if (files.length > 0) {
+            try {
+                uploadedImageUrls = await uploadImagesToCloudinary(files);
+                // CRITICAL: Clean up local files immediately after successful upload to Cloudinary
+                cleanupLocalFiles(files);
+            }
+            catch (uploadError) {
+                console.error("Cloudinary Upload Error:", uploadError);
+                res
+                    .status(500)
+                    .json({ error: "Failed to upload images to cloud storage" });
+                return; // Stop execution
+            }
         }
         // 3. Save to Database
+        // Convert lat/lng to numbers if they are strings from FormData
         const newCenter = await createServiceCenter({
-            centerName, phone, email, city, state, zipCode, country, latitude, longitude,
+            centerName,
+            phone,
+            email,
+            city,
+            state,
+            zipCode,
+            country,
+            latitude: String(latitude),
+            longitude: String(longitude),
             categories,
             imagePaths: uploadedImageUrls,
         });
-        console.log('Successfully onboarded:', newCenter.centerName);
         res.status(201).json({
-            message: 'Service center onboarded successfully',
+            message: "Service center onboarded successfully",
             data: newCenter,
         });
     }
     catch (error) {
-        // Cleanup files if DB save fails but images exist locally
-        const files = req.files;
+        // Cleanup local files if database save fails
         cleanupLocalFiles(files);
-        console.error('Error saving service center:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error("Error saving service center:", error);
+        res.status(500).json({
+            error: "Internal Server Error",
+            details: error instanceof Error ? error.message : "Unknown error",
+        });
     }
 };
 export const getAllServiceCenters = async (req, res) => {
     try {
         const centers = await prisma.serviceCenter.findMany({
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: "desc" },
         });
         res.status(200).json(centers);
     }
     catch (error) {
-        console.error('Error fetching centers:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error("Error fetching centers:", error);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 };

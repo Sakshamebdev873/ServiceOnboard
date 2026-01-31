@@ -1,11 +1,9 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-// 1. Import the correct types
 import type { ServiceFormData, FormErrors } from "../types/ServiceFormData";
 import { getCurrentPosition, reverseGeocode } from "../services/location";
 import { submitServiceForm } from "../services/api";
 
-// 2. This now perfectly matches the `ServiceFormData` type. No more error!
 const INITIAL_STATE: ServiceFormData = {
   centerName: "",
   phone: "",
@@ -17,8 +15,12 @@ const INITIAL_STATE: ServiceFormData = {
   latitude: "",
   longitude: "",
   categories: [],
-  imagePaths: [], // Use the correct property name
+  imagePaths: [], 
 };
+
+// Define constants for validation
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
+const MAX_TOTAL_IMAGES = 5;
 
 export const useServiceForm = () => {
   const [formData, setFormData] = useState<ServiceFormData>(INITIAL_STATE);
@@ -48,18 +50,31 @@ export const useServiceForm = () => {
     updateField("categories", newCats);
   };
 
-  // 2. Corrected handleImageChange
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
+      
+      // Safety Check: Limit file size and count
+      const oversizedFiles = files.filter(f => f.size > MAX_FILE_SIZE);
+      if (oversizedFiles.length > 0) {
+        alert("Some images are too large. Maximum size per image is 5MB.");
+        return;
+      }
+
+      if (formData.imagePaths.length + files.length > MAX_TOTAL_IMAGES) {
+        alert(`You can only upload a maximum of ${MAX_TOTAL_IMAGES} images.`);
+        return;
+      }
+
       setFormData(prev => ({ ...prev, imagePaths: [...prev.imagePaths, ...files] }));
       setPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
       setErrors(prev => ({ ...prev, imagePaths: undefined }));
     }
   };
 
-  // 3. Corrected removeImage
   const removeImage = (index: number) => {
+    // Revoke the object URL to free up memory
+    URL.revokeObjectURL(previews[index]);
     setFormData(prev => ({ ...prev, imagePaths: prev.imagePaths.filter((_, i) => i !== index) }));
     setPreviews(prev => prev.filter((_, i) => i !== index));
   };
@@ -95,7 +110,6 @@ export const useServiceForm = () => {
     }
   };
   
-  // 4. Corrected validate
   const validate = () => {
     const newErrors: FormErrors = {};
     if (!formData.centerName.trim()) newErrors.centerName = "Required";
@@ -114,16 +128,31 @@ export const useServiceForm = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    
+    // Safety 1: Don't submit if already submitting (Double-click prevention)
+    if (status.submitting) return;
+
     if (!validate()) return alert("Please fix all errors before submitting.");
 
     setStatus(prev => ({ ...prev, submitting: true }));
     try {
       await submitServiceForm(formData);
+      
+      // Cleanup: Revoke all object URLs to avoid memory leaks
+      previews.forEach(url => URL.revokeObjectURL(url));
+      
       alert("Form submitted successfully!");
       setFormData(INITIAL_STATE);
       setPreviews([]);
     } catch (error: any) {
-      alert(error.message || "An unknown error occurred.");
+      console.error("Submission Error:", error);
+      
+      // Safety 2: Handle the "Unexpected Token" error clearly
+      if (error.message.includes("Unexpected token") || error.message.includes("JSON")) {
+        alert("The server is temporarily busy or your images were too large to process. Please try smaller files.");
+      } else {
+        alert(error.message || "An unknown error occurred.");
+      }
     } finally {
       setStatus(prev => ({ ...prev, submitting: false }));
     }

@@ -21,8 +21,10 @@ const AdminDashboard: React.FC = () => {
     // ... (fetch data logic remains the same)
     const fetchData = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://serviceonboard.onrender.com/api/service-center'}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://serviceonboard.onrender.com/api/'}`);
         if (!response.ok) throw new Error('Network response was not ok');
+        console.log(response);
+        
         const data: ServiceCenterResponse[] = await response.json();
         setCenters(data);
       } catch (error) {
